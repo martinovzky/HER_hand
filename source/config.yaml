@@ -1,0 +1,20 @@
+#ui 
+ui:
+  enable: true        # show GUI
+
+#training hyperparameters
+train:
+  total_steps: 1000000
+
+#env parameters
+env:
+  table_height: 0.3   # meters
+  flip_axis: [0, 1, 0]
+  flip_angle: 3.1416  # radians (180°)
+  pos_tol: 0.02       # meters
+  ori_tol: 0.1        # radians
+
+#HER settings
+her:
+  k: 4                # relabel 4 future goals per step
+
