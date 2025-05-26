@@ -31,24 +31,27 @@ class GraspAndFlipEnv(DirectRLEnv):
                 prim_path="/World/Table"
             )
         )
-        # 2) Cube on table
+        # 2) Cube on table - positioned for optimal hand reach
         cube_usd = os.path.join(cwd, "cube.usd")
+        cube_height = 0.025  # Half of cube size (5cm cube)
         spawn_usd(
             cfg=UsdFileCfg(
                 usd_path=cube_usd,
-                prim_path="/World/Cube"
+                prim_path="/World/Cube",
+                translation=[0.0, -0.1, self.task_cfg.table_height + cube_height]  # Slightly in front of hand
             )
         )
-        # 3) Shadow Hand above table
+        # 3) Shadow Hand positioned for optimal reach
         hand_usd = os.path.join(
             os.getenv("EXPASSETS_PATH", ""),
             "isaaclab_assets/robots/shadow_hand.usd"
         )
+        hand_height = 0.15  # Height above table for proper grasp approach
         spawn_usd(
             cfg=UsdFileCfg(
                 usd_path=hand_usd,
                 prim_path="/World/Hand",
-                translation=[0, 0, self.task_cfg.table_height + 0.1]
+                translation=[0.0, 0.0, self.task_cfg.table_height + hand_height]
             )
         )
 
@@ -71,12 +74,12 @@ class GraspAndFlipEnv(DirectRLEnv):
         return obs
 
     def get_observations(self):
-        jp = self.get_articulation_joint_positions("/World/Hand")
-        cp = self.get_world_pose("/World/Cube")
+        jp = self.get_articulation_joint_positions("/World/Hand") #joint positions
+        cp = self.get_world_pose("/World/Cube") # cube pose
         return {
-            "obs": np.concatenate([jp, cp.position, cp.orientation]),
+            "obs": np.concatenate([jp, cp.position, cp.orientation]), 
             "achieved_goal": {"position": cp.position, "orientation": cp.orientation},
-            "desired_goal": self.current_goal
+            "desired_goal": self.current_goal 
         }
 
     def compute_reward(self, obs_dict):
@@ -90,7 +93,7 @@ class GraspAndFlipEnv(DirectRLEnv):
     def close_hand(self):
         """Close all hand joints to grasp."""
         num = self.num_hand_joints
-        targets = np.ones(num) * self.task_cfg.grasp_angle
+        targets = np.ones(num) * self.task_cfg.grasp_angle 
         self.set_articulation_joint_targets("/World/Hand", targets)
 
 # helper for quaternion multiplication

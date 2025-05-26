@@ -8,7 +8,7 @@ from isaaclab.envs import DirectRLEnv, DirectRLEnvCfg  # RL base classes
 # Step 2 will implement these
 from source.envs.grasp_and_flip import GraspAndFlipEnv, GraspAndFlipEnvCfg
 
-def launch(headless: bool, record_video: bool):
+def launch(headless: bool, record_video: bool, return_env: bool = False):
     # 1) start Isaac Lab
     launcher = AppLauncher(headless=headless,
                            enable_cameras=record_video)
@@ -23,8 +23,8 @@ def launch(headless: bool, record_video: bool):
 
     # 4) create RL env
     env_cfg  = DirectRLEnvCfg(sim=sim, viewer=not headless)
-    task_cfg = FlipAndGraspEnvCfg(**cfg["env"])
-    env       = FlipAndGraspEnv(env_cfg, task_cfg)
+    task_cfg = GraspAndFlipEnvCfg(**cfg["env"])
+    env      = GraspAndFlipEnv(env_cfg, task_cfg)
     env.initialize()
 
     # 5) placeholder rollout
@@ -35,5 +35,9 @@ def launch(headless: bool, record_video: bool):
         if done:
             obs = env.reset()
 
-    # 6) shutdown
-    app.close()
+    # At end of function:
+    if return_env:
+        return env
+    else:
+        # 6) shutdown
+        app.close()

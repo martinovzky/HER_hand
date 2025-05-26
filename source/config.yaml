@@ -5,16 +5,23 @@ ui:
 #training hyperparameters
 train:
   total_steps: 1000000
+  batch_size: 256
+  learning_rate: 0.001
 
 #env parameters
 env:
   table_height: 0.3   # meters
-  flip_axis: [0, 1, 0]
+  flip_axis: [0, 1, 0] # axis to flip the object
   flip_angle: 3.1416  # radians (180°)
-  pos_tol: 0.02       # meters
-  ori_tol: 0.1        # radians
+  pos_tol: 0.02       # meters, tolerance for position matching
+  ori_tol: 0.1        # radians, tolerance for orientation matching
+  grasp_angle: 0.8    # finger-close target (radians)
 
 #HER settings
 her:
   k: 4                # relabel 4 future goals per step
+
+#evaluation settings
+eval:
+  episodes: 100       # number of episodes to evaluate
 
