@@ -30,7 +30,7 @@ def main():
     her_cfg = {"k": cfg["her"].get("k", 4)}
     model = make_ddpg_her_agent(env, train_cfg, her_cfg)
 
-    # train
+    # train (TensorBoard logs automatically saved to ./logs/)
     model.learn(total_timesteps=cfg["train"]["total_steps"])
 
     # ensure models directory exists
