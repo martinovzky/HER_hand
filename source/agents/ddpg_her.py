@@ -30,6 +30,8 @@ def make_ddpg_her_agent(env, train_cfg: dict, her_cfg: dict):
         env=her_env,
         batch_size=train_cfg.get("batch_size", 256),
         learning_rate=train_cfg.get("learning_rate", 1e-3),
+        tensorboard_log="./logs/",
         verbose=1
     )
+    
     return model
