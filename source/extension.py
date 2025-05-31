@@ -3,17 +3,12 @@
 import os
 import yaml
 
-from isaaclab.app import AppLauncher               # launches Isaac Lab
-from isaaclab.sim import SimulationContext         # physics + renderer controller
-from isaaclab.envs import DirectRLEnv, DirectRLEnvCfg, ViewerCfg
-
-from source.envs.grasp_and_flip import GraspAndFlipEnv, GraspAndFlipEnvCfg
+# 1) Import only AppLauncher at module level; other IsaacLab imports happen inside launch()
+from isaaclab.app import AppLauncher
 
 def launch(headless: bool, record_video: bool, return_env: bool = False):
     # ------------------------------------------------------------------------------
     # 1) Start Isaac Lab via AppLauncher
-    #    - headless: whether to disable the GUI entirely
-    #    - enable_cameras: whether to initialize offscreen cameras for video recording
     # ------------------------------------------------------------------------------
     launcher = AppLauncher(
         headless=headless,
@@ -22,8 +17,14 @@ def launch(headless: bool, record_video: bool, return_env: bool = False):
     app = launcher.app
 
     # ------------------------------------------------------------------------------
-    # 2) Create a SimulationContext (physics + renderer). We DO NOT pass this
-    #    into DirectRLEnvCfg; DirectRLEnv will implicitly use the active SimulationContext.
+    # 2) Now that App is running, import the rest of the IsaacLab modules
+    # ------------------------------------------------------------------------------
+    from isaaclab.sim import SimulationContext
+    from isaaclab.envs import DirectRLEnv, DirectRLEnvCfg, ViewerCfg
+    from source.envs.grasp_and_flip import GraspAndFlipEnv, GraspAndFlipEnvCfg
+
+    # ------------------------------------------------------------------------------
+    # 3) Create a SimulationContext (physics + renderer). DirectRLEnv will pick it up.
     # ------------------------------------------------------------------------------
     sim = SimulationContext(
         physics_dt=1/60.0,
@@ -31,57 +32,64 @@ def launch(headless: bool, record_video: bool, return_env: bool = False):
     )
 
     # ------------------------------------------------------------------------------
-    # 3) Load YAML configuration from "source/config.yaml"
-    #    Ensure that safe_load returned a dict (not None).
+    # 4) Load your YAML configuration (source/config.yaml)
     # ------------------------------------------------------------------------------
-    cfg_path = os.path.join("source", "config.yaml")
-    cfg_data = yaml.safe_load(open(cfg_path, "r"))
+    config_path = os.path.join(os.path.dirname(__file__), "config.yaml")
+    with open(config_path, 'r') as f:
+        cfg_data = yaml.safe_load(f)
     if not isinstance(cfg_data, dict):
-        raise RuntimeError(f"Expected a dict from {cfg_path} but got {type(cfg_data)}")
+        raise ValueError(f"Expected dict from {config_path}, got {type(cfg_data)}")
 
     # ------------------------------------------------------------------------------
-    # 4) Build DirectRLEnvCfg with a ViewerCfg
-    #    - In v2.x, DirectRLEnvCfg only takes its own fields, and we must supply viewer=ViewerCfg()
+    # 5) Build DirectRLEnvCfg with a ViewerCfg (never None)
     # ------------------------------------------------------------------------------
-    viewer_cfg = ViewerCfg()         # Always pass a ViewerCfg instance (cannot pass None)
-    env_cfg    = DirectRLEnvCfg(viewer=viewer_cfg)
+    viewer_cfg = ViewerCfg()  # Always supply a ViewerCfg instance
+    env_cfg    = DirectRLEnvCfg(
+        viewer=viewer_cfg,
+        episode_length_s=10.0,
+        decimation=2
+    )
 
     # ------------------------------------------------------------------------------
-    # 5) Build the task config from cfg_data["env"] and create the GraspAndFlipEnv
-    #    - Check that "env" key exists and is a dict
+    # 6) Create the task configuration and RL environment
     # ------------------------------------------------------------------------------
-    if "env" not in cfg_data or not isinstance(cfg_data["env"], dict):
-        raise RuntimeError("'env' section missing or not a dict in config.yaml")
-    task_cfg = GraspAndFlipEnvCfg(**cfg_data["env"])
-    env      = GraspAndFlipEnv(env_cfg, task_cfg)
+    env_section = cfg_data.get("env")
+    if not isinstance(env_section, dict):
+        raise ValueError("'env' section missing or not a dict in config.yaml")
+    task_cfg = GraspAndFlipEnvCfg(**env_section)
+
+    # Construct the environment; note that GraspAndFlipEnv signature is (env_cfg, task_cfg)
+    env = GraspAndFlipEnv(env_cfg, task_cfg)
 
     # ------------------------------------------------------------------------------
-    # 6) Reset the environment to build the scene and retrieve the first observation
-    #    (DirectRLEnv in v2.x does not have `initialize()`, use `reset()` instead)
+    # 7) Reset to build the scene and get the first observation
     # ------------------------------------------------------------------------------
     obs = env.reset()
 
     # ------------------------------------------------------------------------------
-    # 7) Run a simple loop for cfg_data["train"]["total_steps"] steps
-    #    - In v2.x, env.step(...) returns exactly five values: (obs, reward, done, truncated, info)
+    # 8) Simple rollout/training loop
+    #    DirectRLEnv.step() returns: (obs, reward, terminated, truncated, info)
     # ------------------------------------------------------------------------------
-    total_steps = 0
-    if isinstance(cfg_data.get("train"), dict):
-        total_steps = int(cfg_data["train"].get("total_steps", 0))
+    train_section = cfg_data.get("train", {})
+    total_steps   = int(train_section.get("total_steps", 0)) if isinstance(train_section, dict) else 0
 
     for _ in range(total_steps):
         action = env.action_space.sample()
-        obs, reward, done, truncated, info = env.step(action)
-        if done or truncated:
+        obs, reward, terminated, truncated, info = env.step(action)
+        # If any environment is done or truncated, reset
+        if terminated.any() or truncated.any():
             obs = env.reset()
 
     # ------------------------------------------------------------------------------
-    # 8) Either return the env, or shut down the application
+    # 9) Return or close
     # ------------------------------------------------------------------------------
     if return_env:
         return env
     else:
+        env.close()
         app.close()
+        return None
+
 
 
 
