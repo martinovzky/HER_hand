@@ -1,7 +1,7 @@
 import numpy as np
 from stable_baselines3 import DDPG
 from stable_baselines3.common.callbacks import BaseCallback
-from sb3_contrib import HERGoalEnvWrapper
+from sb3_contrib.her.goal_env_wrapper import HERGoalEnvWrapper
 
 class ProgressCallback(BaseCallback):
     """Enhanced callback to log comprehensive training progress"""
