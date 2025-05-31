@@ -7,9 +7,16 @@
 
 def Xform "Cube" (
     kind = "component"
+    prepend apiSchemas = ["PhysicsRigidBodyAPI"]
 )
 {
-    def Mesh "CubeMesh"
+    # Physics properties for the rigid body
+    bool physics:rigidBodyEnabled = 1
+    bool physics:kinematicEnabled = 0
+
+    def Mesh "CubeMesh" (
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMassAPI"]
+    )
     {
         uniform bool doubleSided = 0
         int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
@@ -21,6 +28,16 @@ def Xform "Cube" (
             interpolation = "vertex"
         )
         uniform token subdivisionScheme = "none"
+        
+        # Physics properties
+        bool physics:collisionEnabled = 1
+        float physics:mass = 0.1
+        vector3f physics:centerOfMass = (0, 0, 0)
+        
+        # Material properties for physics
+        float physics:restitution = 0.3
+        float physics:dynamicFriction = 0.5
+        float physics:staticFriction = 0.6
 
         def Material "Material"
         {
@@ -36,34 +53,5 @@ def Xform "Cube" (
             }
         }
     }
-
-    # Physics properties - make it a rigid body with mass
-    def PhysicsScene "PhysicsScene"
-    {
-        vector3f physics:gravityDirection = (0, 0, -1)
-        float physics:gravityMagnitude = 9.81
-    }
-
-    # Rigid body dynamics
-    def Mesh "CubeRigidBody" (
-        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsCollisionAPI", "PhysicsMassAPI"]
-    )
-    {
-        uniform bool doubleSided = 0
-        int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
-        int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
-        point3f[] points = [(-0.025, -0.025, -0.025), (0.025, -0.025, -0.025), (-0.025, 0.025, -0.025), (0.025, 0.025, -0.025), (-0.025, 0.025, 0.025), (0.025, 0.025, 0.025), (-0.025, -0.025, 0.025), (0.025, -0.025, 0.025)]
-        uniform token subdivisionScheme = "none"
-        
-        # Physics properties
-        bool physics:collisionEnabled = 1
-        bool physics:rigidBodyEnabled = 1
-        float physics:mass = 0.1
-        vector3f physics:centerOfMass = (0, 0, 0)
-        
-        # Material properties for physics
-        float physics:restitution = 0.3
-        float physics:dynamicFriction = 0.5
-        float physics:staticFriction = 0.6
-    }
 }
+it
