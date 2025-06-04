@@ -10,7 +10,8 @@ from isaaclab_assets.robots.shadow_hand import SHADOW_HAND_CFG
 
 # Import spawn_from_usd() and its config class exactly as documented
 from isaaclab.sim.spawners.from_files import spawn_from_usd, UsdFileCfg
-from isaaclab.sim.schemas import RigidBodyPropertiesCfg, CollisionPropertiesCfg
+import isaaclab.sim as sim_utils
+from isaaclab.sim.schemas import RigidBodyPropertiesCfg, CollisionPropertiesCfg, MassPropertiesCfg
 
 from isaaclab.assets import RigidObject, RigidObjectCfg, Articulation, ArticulationCfg
 from isaaclab.sensors import FrameTransformer, FrameTransformerCfg
@@ -34,55 +35,85 @@ class GraspAndFlipEnv(DirectRLEnv):
 
     def _setup_scene(self):
         """Setup scene with proper collision and physics interactions."""
+        # Debug environment namespace
+        print(f"DEBUG: Environment namespace: {self.scene.env_ns}")
+        print(f"DEBUG: Number of environments: {self.scene.num_envs}")
+        
         # Resolve absolute path to assets directory
         here = os.path.dirname(__file__)
         assets = os.path.abspath(os.path.join(here, "../../assets"))
 
-        # === 1) Spawn table USD with proper collision ===
+        # === 1) Spawn table USD with proper physics API ===
         table_usd = os.path.join(assets, "table_at_hand_height.usd")
+        table_prim_path = f"{self.scene.env_ns}/Table"
+        print(f"DEBUG: Table prim path: {table_prim_path}")
+        
         spawn_from_usd(
-            f"{self.scene.env_ns}/Table",
-            UsdFileCfg(
+            table_prim_path,
+            sim_utils.UsdFileCfg(  # Use sim_utils prefix
                 usd_path=table_usd,
-                rigid_props=RigidBodyPropertiesCfg(
-                    kinematic_enabled=True,
+                # Mass properties (REQUIRED for RigidBodyAPI)
+                mass_props=sim_utils.MassPropertiesCfg(mass=10.0),
+                # Rigid body properties
+                rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                    rigid_body_enabled=True,  # Explicitly enable rigid body
+                    kinematic_enabled=True,   # Static table
                     disable_gravity=True,
+                    solver_position_iteration_count=4,
+                    solver_velocity_iteration_count=0,
                 ),
-                collision_props=CollisionPropertiesCfg(
+                # Collision properties
+                collision_props=sim_utils.CollisionPropertiesCfg(
                     collision_enabled=True,
+                    contact_offset=0.01,
+                    rest_offset=0.0,
                 ),
+                activate_contact_sensors=False,
             )
         )
         
         # === 2) Wrap table in RigidObject ===
         table_cfg = RigidObjectCfg(
-            prim_path=f"{self.scene.env_ns}/Table",
+            prim_path=table_prim_path,
             spawn=None,
             collision_group=0,
             debug_vis=False
         )
         self.table = RigidObject(cfg=table_cfg)
 
-        # === 3) Spawn cube USD with proper collision ===
+        # === 3) Spawn cube USD with proper physics API ===
         cube_usd = os.path.join(assets, "cube.usd")
+        cube_prim_path = f"{self.scene.env_ns}/Cube"
+        print(f"DEBUG: Cube prim path: {cube_prim_path}")
+        
         half_edge = 0.025
         spawn_from_usd(
-            f"{self.scene.env_ns}/Cube",
-            UsdFileCfg(
+            cube_prim_path,
+            sim_utils.UsdFileCfg(  # Use sim_utils prefix
                 usd_path=cube_usd,
-                rigid_props=RigidBodyPropertiesCfg(
-                    kinematic_enabled=False,
+                # Mass properties (REQUIRED for RigidBodyAPI)
+                mass_props=sim_utils.MassPropertiesCfg(mass=0.1),
+                # Rigid body properties
+                rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                    rigid_body_enabled=True,  # Explicitly enable rigid body
+                    kinematic_enabled=False,  # Dynamic cube
                     disable_gravity=False,
+                    solver_position_iteration_count=4,
+                    solver_velocity_iteration_count=1,
                 ),
-                collision_props=CollisionPropertiesCfg(
+                # Collision properties
+                collision_props=sim_utils.CollisionPropertiesCfg(
                     collision_enabled=True,
+                    contact_offset=0.01,
+                    rest_offset=0.0,
                 ),
+                activate_contact_sensors=False,
             )
         )
         
         # === 4) Wrap cube in RigidObject ===
         cube_cfg = RigidObjectCfg(
-            prim_path=f"{self.scene.env_ns}/Cube",
+            prim_path=cube_prim_path,
             spawn=None,
             collision_group=-1,
             debug_vis=False,
@@ -94,17 +125,17 @@ class GraspAndFlipEnv(DirectRLEnv):
         self.cube = RigidObject(cfg=cube_cfg)
 
         # === 5) Create Shadow Hand configuration ===
-        # Properly create a new ArticulationCfg based on SHADOW_HAND_CFG
         hand_cfg = ArticulationCfg(
             prim_path=f"{self.scene.env_ns}/Hand",
-            spawn=SHADOW_HAND_CFG.spawn,  # Use the existing spawn config
+            spawn=SHADOW_HAND_CFG.spawn,
             collision_group=0,
             debug_vis=False,
             init_state=ArticulationCfg.InitialStateCfg(
                 pos=(0.0, 0.0, self.task_cfg.table_height + 0.20),
-                rot=(0.0, 0.0, -0.7071, 0.7071)  # Face downward
+                rot=(0.0, 0.0, -0.7071, 0.7071),  # Face downward
+                joint_pos={".*": 0.0},
             ),
-            actuators=SHADOW_HAND_CFG.actuators,  # Use the existing actuators
+            actuators=SHADOW_HAND_CFG.actuators,
             soft_joint_pos_limit_factor=SHADOW_HAND_CFG.soft_joint_pos_limit_factor,
         )
         
@@ -232,5 +263,3 @@ class GraspAndFlipEnv(DirectRLEnv):
     def num_hand_joints(self) -> int:
         """Return the total number of joints in the Shadow Hand articulation."""
         return self.hand.num_joints
-
-
