@@ -4,7 +4,7 @@ import argparse
 import os
 import yaml
 from pathlib import Path
-from gymnasium.wrappers import RecordVideo
+from gymnasium.wrappers.record_video import RecordVideo
 
 from source.extension import launch
 from source.agents.ddpg_her import make_ddpg_her_agent
