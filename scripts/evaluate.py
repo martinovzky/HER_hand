@@ -19,7 +19,8 @@ def main():
         done = False
         while not done:
             action, _ = model.predict(obs, deterministic=True)
-            obs, reward, done, _ = env.step(action)
+            obs, reward, terminated, truncated, _ = env.step(action)
+            done = terminated or truncated
         successes += int(reward == 1.0)
 
     rate = successes / episodes
