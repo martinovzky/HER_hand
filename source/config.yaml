@@ -17,9 +17,11 @@ env:
   ori_tol: 0.1        # radians, tolerance for orientation matching
   grasp_angle: 0.8    # finger-close target (radians)
 
-#HER settings
 her:
-  k: 4                # relabel 4 future goals per step
+  n_sampled_goal: 4
+  goal_selection_strategy: future
+  online_sampling: true
+
 
 #evaluation settings
 eval:
