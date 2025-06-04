@@ -55,7 +55,9 @@ def test_config():
         env_cfg = cfg["env"]
         print(f"   Table height: {env_cfg['table_height']}m")
         print(f"   Flip angle: {env_cfg['flip_angle']} rad ({env_cfg['flip_angle']*180/3.14159:.0f}°)")
-        print(f"   HER k-value: {cfg['her']['k']}")
+        her_cfg = cfg['her']
+        print(f"   HER n_sampled_goal: {her_cfg.get('n_sampled_goal', 'N/A')}")
+        print(f"   Goal strategy: {her_cfg.get('goal_selection_strategy', 'future')}")
         
         return True
         

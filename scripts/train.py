@@ -21,7 +21,58 @@ def main():
     
     args = p.parse_args()
 
-    cfg = yaml.safe_load(open("source/config.yaml"))
+    # Get absolute path to config - this script is in HER_hand/scripts/train.py
+    script_dir = os.path.dirname(os.path.abspath(__file__))  # /path/to/HER_hand/scripts
+    project_root = os.path.dirname(script_dir)              # /path/to/HER_hand
+    config_path = os.path.join(project_root, "source", "config.yaml")
+    
+    print(f"DEBUG: Script directory: {script_dir}")
+    print(f"DEBUG: Project root: {project_root}")
+    print(f"DEBUG: Config path: {config_path}")
+    print(f"DEBUG: Config exists: {os.path.exists(config_path)}")
+    print(f"DEBUG: Current working directory: {os.getcwd()}")
+    
+    if not os.path.exists(config_path):
+        # Try alternative paths
+        alt_paths = [
+            "source/config.yaml",  # relative from cwd
+            "../source/config.yaml",  # relative from scripts dir
+            os.path.join(os.getcwd(), "source", "config.yaml"),  # from cwd
+        ]
+        
+        print("DEBUG: Trying alternative paths:")
+        for alt_path in alt_paths:
+            print(f"  {alt_path}: {os.path.exists(alt_path)}")
+            if os.path.exists(alt_path):
+                config_path = alt_path
+                break
+        else:
+            raise FileNotFoundError(f"Config file not found at any of these paths: {[config_path] + alt_paths}")
+    
+    print(f"DEBUG: Using config path: {config_path}")
+    
+    # Load and debug the config
+    with open(config_path, 'r') as f:
+        file_content = f.read()
+        print(f"DEBUG: Raw file content:\n{file_content}")
+    
+    # Parse YAML
+    cfg = yaml.safe_load(file_content)
+    
+    # Debug: Print what we actually loaded
+    print(f"DEBUG: Config type: {type(cfg)}")
+    print(f"DEBUG: Config content: {cfg}")
+    print(f"DEBUG: Config keys: {list(cfg.keys()) if isinstance(cfg, dict) else 'Not a dict!'}")
+    
+    # Validate config structure
+    if cfg is None:
+        raise ValueError("Config file is empty or invalid")
+    
+    if isinstance(cfg, list):
+        raise ValueError("Config file should contain a dictionary, not a list. Check your YAML structure.")
+    
+    if not isinstance(cfg, dict):
+        raise ValueError(f"Config file should contain a dictionary, got {type(cfg)}")
 
     # Enable cameras if video recording is requested (following Isaac Lab pattern)
     enable_cameras = args.video or args.record
@@ -32,6 +83,10 @@ def main():
         record_video=enable_cameras,
         return_env=True
     )
+
+    # Check if env was created successfully
+    if env is None:
+        raise RuntimeError("Failed to create environment from launch()")
 
     # Apply video recording wrapper if requested (Isaac Lab's exact approach)
     if args.video:
@@ -54,32 +109,37 @@ def main():
             name_prefix="train"
         )
 
-    # build agent, training, and HER configurations
-    train_cfg = {
-        "batch_size":    cfg["train"].get("batch_size", 256),
-        "learning_rate": cfg["train"].get("learning_rate", 1e-3),
-    }
+    # build agent, training, and HER configurations with safe access
+    print(f"DEBUG: Accessing train config: {cfg.get('train', {})}")
+    print(f"DEBUG: Accessing her config: {cfg.get('her', {})}")
     
+    train_cfg = {
+        "batch_size":    cfg.get("train", {}).get("batch_size", 256),
+        "learning_rate": cfg.get("train", {}).get("learning_rate", 1e-3),
+    }
     her_section = cfg.get("her", {}) if isinstance(cfg.get("her", {}), dict) else {}
     her_cfg = {
-    "n_sampled_goal": her_section.get("n_sampled_goal", 4),
-    "goal_selection_strategy": her_section.get("goal_selection_strategy", "future"),
-    "online_sampling": her_section.get("online_sampling", True),
+        "n_sampled_goal": her_section.get("n_sampled_goal", 4),
+        "goal_selection_strategy": her_section.get("goal_selection_strategy", "future"),
+        "online_sampling": her_section.get("online_sampling", True),
     }
+    if "max_episode_length" in her_section:
+        her_cfg["max_episode_length"] = her_section["max_episode_length"]
     
-if "max_episode_length" in her_section:
-    her_cfg["max_episode_length"] = her_section["max_episode_length"]
+    print(f"DEBUG: Final train_cfg: {train_cfg}")
+    print(f"DEBUG: Final her_cfg: {her_cfg}")
 
     
     # Create agent with progress callback
     model, callback = make_ddpg_her_agent(env, train_cfg, her_cfg)
 
-    print(f"Starting training for {cfg['train']['total_steps']:,} steps...")
+    total_steps = cfg.get("train", {}).get("total_steps", 100000)
+    print(f"Starting training for {total_steps:,} steps...")
     print("Progress will be logged every 1000 steps")
     
     # train with callback for progress logging
     model.learn(
-        total_timesteps=cfg["train"]["total_steps"],
+        total_timesteps=total_steps,
         callback=callback
     )
 
@@ -96,4 +156,6 @@ if "max_episode_length" in her_section:
 
 if __name__ == "__main__":
     main()
+
+
 

@@ -5,11 +5,25 @@
     upAxis = "Z"
 )
 
+# Physics scene at root level
+def PhysicsScene "PhysicsScene"
+{
+    vector3f physics:gravityDirection = (0, 0, -1)
+    float physics:gravityMagnitude = 9.81
+}
+
 def Xform "Table" (
     kind = "component"
+    prepend apiSchemas = ["PhysicsRigidBodyAPI"]
 )
 {
-    def Mesh "TableTop"
+    # Make table static (kinematic)
+    bool physics:rigidBodyEnabled = 1
+    bool physics:kinematicEnabled = 1
+
+    def Mesh "TableTop" (
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMassAPI"]
+    )
     {
         uniform bool doubleSided = 0
         int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
@@ -21,6 +35,13 @@ def Xform "Table" (
             interpolation = "vertex"
         )
         uniform token subdivisionScheme = "none"
+        
+        # Physics properties
+        bool physics:collisionEnabled = 1
+        float physics:mass = 10.0
+        float physics:restitution = 0.2
+        float physics:dynamicFriction = 0.8
+        float physics:staticFriction = 0.9
 
         def Material "Material"
         {
@@ -37,7 +58,9 @@ def Xform "Table" (
         }
     }
 
-    def Mesh "TableLegs"
+    def Mesh "TableLegs" (
+        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMassAPI"]
+    )
     {
         uniform bool doubleSided = 0
         int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
@@ -51,6 +74,13 @@ def Xform "Table" (
             interpolation = "vertex"
         )
         uniform token subdivisionScheme = "none"
+        
+        # Physics properties for legs
+        bool physics:collisionEnabled = 1
+        float physics:mass = 2.0
+        float physics:restitution = 0.2
+        float physics:dynamicFriction = 0.8
+        float physics:staticFriction = 0.9
 
         def Material "Material"
         {
@@ -65,25 +95,5 @@ def Xform "Table" (
                 token outputs:surface
             }
         }
-    }
-
-    # Physics properties
-    def PhysicsScene "PhysicsScene"
-    {
-        vector3f physics:gravityDirection = (0, 0, -1)
-        float physics:gravityMagnitude = 9.81
-    }
-
-    # Collision for table top
-    def Mesh "TableTopCollision" (
-        prepend apiSchemas = ["PhysicsCollisionAPI"]
-    )
-    {
-        uniform bool doubleSided = 0
-        int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
-        int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
-        point3f[] points = [(-0.3, -0.3, 0.295), (0.3, -0.3, 0.295), (-0.3, 0.3, 0.295), (0.3, 0.3, 0.295), (-0.3, 0.3, 0.305), (0.3, 0.3, 0.305), (-0.3, -0.3, 0.305), (0.3, -0.3, 0.305)]
-        uniform token subdivisionScheme = "none"
-        bool physics:collisionEnabled = 1
     }
 }

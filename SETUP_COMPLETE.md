@@ -73,7 +73,9 @@ train:
   learning_rate: 0.001
 
 her:
-  k: 4                 # 4 hindsight goals per transition
+  n_sampled_goal: 4            # number of future goals sampled
+  goal_selection_strategy: future
+  online_sampling: true
 ```
 
 ## Isaac Sim 4.5 Compatibility ✅
