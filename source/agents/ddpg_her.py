@@ -1,7 +1,6 @@
 import numpy as np
-from stable_baselines3 import DDPG
+from stable_baselines3 import DDPG, HerReplayBuffer 
 from stable_baselines3.common.callbacks import BaseCallback
-from sb3_contrib.her.goal_env_wrapper import HERGoalEnvWrapper
 
 class ProgressCallback(BaseCallback):
     """Enhanced callback to log comprehensive training progress"""
@@ -102,7 +101,7 @@ class ProgressCallback(BaseCallback):
 
 def make_ddpg_her_agent(env, train_cfg: dict, her_cfg: dict):
     """
-    Wrap `env` with HER and create a DDPG model.
+    Create a DDPG model with HER.
 
     Args:
         env: a gym.GoalEnv-compliant environment (e.g., DirectRLEnv)
@@ -111,22 +110,25 @@ def make_ddpg_her_agent(env, train_cfg: dict, her_cfg: dict):
             - learning_rate: float
         her_cfg: dict with key:
             - k: int (number of future goals to sample per step)
+            - strategy: str (goal selection strategy, e.g., "future")
     Returns:
-        model: a Stable-Baselines3 DDPG model wrapped for HER
+        model: a Stable-Baselines3 DDPG model with HER
         callback: progress callback for training
     """
-    # Wrap environment with HER
-    her_env = HERGoalEnvWrapper(
-        env,
-        n_sampled_goal=her_cfg["k"],
-        goal_selection_strategy="future",
-        online_sampling=True
+    # Define HER replay buffer arguments
+    replay_buffer_kwargs = dict(
+        n_sampled_goal=her_cfg.get("k", 4),  # Default to 4 if not specified
+        goal_selection_strategy=her_cfg.get("strategy", "future"), # Default to "future"
+        online_sampling=True, # Common setting for HER
+        # env=env # HerReplayBuffer will get it from the model
     )
 
-    # Create DDPG model with TensorBoard logging
+    # Create DDPG model with HerReplayBuffer and TensorBoard logging
     model = DDPG(
-        policy="MlpPolicy",
-        env=her_env,
+        policy="MlpPolicy", # Or "MultiInputPolicy" if using Dict observations
+        env=env, # Pass the original environment
+        replay_buffer_class=HerReplayBuffer,
+        replay_buffer_kwargs=replay_buffer_kwargs,
         batch_size=train_cfg.get("batch_size", 256),
         learning_rate=train_cfg.get("learning_rate", 1e-3),
         tensorboard_log="./logs/",
@@ -137,3 +139,4 @@ def make_ddpg_her_agent(env, train_cfg: dict, her_cfg: dict):
     callback = ProgressCallback()
     
     return model, callback
+
