@@ -123,15 +123,19 @@ def make_ddpg_her_agent(env, train_cfg: dict, her_cfg: dict):
         online_sampling=True
     )
 
-    # Create DDPG model with TensorBoard logging
+    # Create DDPG model with HER replay buffer
     model = DDPG(
-        policy="MlpPolicy",
-        env=her_env,
-        batch_size=train_cfg.get("batch_size", 256),
-        learning_rate=train_cfg.get("learning_rate", 1e-3),
-        tensorboard_log="./logs/",
-        verbose=1
+    policy="MultiInputPolicy",
+    env=env,
+    replay_buffer_class=HerReplayBuffer,
+    replay_buffer_kwargs=replay_buffer_kwargs,
+    batch_size=train_cfg.get("batch_size", 256),
+    learning_rate=train_cfg.get("learning_rate", 1e-3),
+    tensorboard_log="./logs/",
+    verbose=1,
     )
+
+
     
     # Create enhanced progress callback
     callback = ProgressCallback()
