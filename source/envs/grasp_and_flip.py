@@ -3,7 +3,7 @@
 import os
 import numpy as np
 import torch
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from isaaclab.envs import DirectRLEnv
 
