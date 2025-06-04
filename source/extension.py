@@ -19,17 +19,15 @@ def launch(headless: bool, record_video: bool, return_env: bool = False):
     # ------------------------------------------------------------------------------
     # 2) Now that App is running, import the rest of the IsaacLab modules
     # ------------------------------------------------------------------------------
-    from isaaclab.sim import SimulationContext
+    from isaaclab.sim import SimulationContext, SimulationCfg
     from isaaclab.envs import DirectRLEnv, DirectRLEnvCfg, ViewerCfg
     from source.envs.grasp_and_flip import GraspAndFlipEnv, GraspAndFlipEnvCfg
 
     # ------------------------------------------------------------------------------
     # 3) Create a SimulationContext (physics + renderer). DirectRLEnv will pick it up.
     # ------------------------------------------------------------------------------
-    sim = SimulationContext(
-        physics_dt=1/60.0,
-        rendering_dt=1/30.0
-    )
+    sim_cfg = SimulationCfg(dt=1/60.0, render_interval=2)
+    sim = SimulationContext(sim_cfg)
 
     # ------------------------------------------------------------------------------
     # 4) Load your YAML configuration (source/config.yaml)
