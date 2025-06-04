@@ -62,7 +62,8 @@ def launch(headless: bool, record_video: bool, return_env: bool = False):
     # ------------------------------------------------------------------------------
     # 7) Reset to build the scene and get the first observation
     # ------------------------------------------------------------------------------
-    obs = env.reset()
+    obs, _ = env.reset()
+
 
     # ------------------------------------------------------------------------------
     # 8) Simple rollout/training loop
@@ -76,7 +77,8 @@ def launch(headless: bool, record_video: bool, return_env: bool = False):
         obs, reward, terminated, truncated, info = env.step(action)
         # If any environment is done or truncated, reset
         if terminated.any() or truncated.any():
-            obs = env.reset()
+            obs, _ = env.reset()
+
 
     # ------------------------------------------------------------------------------
     # 9) Return or close
