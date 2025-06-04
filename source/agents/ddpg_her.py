@@ -114,10 +114,9 @@ def make_ddpg_her_agent(env, train_cfg: dict, her_cfg: dict):
     Create a DDPG model with HER using SB3's HerReplayBuffer.
 
     Args:
-        env: a gym.GoalEnv-compliant environment. 
-             It must return dict observations with keys:
-             'observation', 'achieved_goal', 'desired_goal', 
-             and implement compute_reward().
+        env:  env: a goal-conditioned environment. 
+          It should return dict observations with keys ``'obs'``, ``'achieved_goal'`` and
+             ``'desired_goal'`` and expose ``compute_reward()`` for HER.
         train_cfg: dict with keys:
             - batch_size: int
             - learning_rate: float
