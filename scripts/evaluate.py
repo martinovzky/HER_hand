@@ -15,7 +15,7 @@ def main():
     successes = 0
 
     for _ in range(episodes):
-        obs = env.reset()
+        obs, _ = env.reset()
         done = False
         while not done:
             action, _ = model.predict(obs, deterministic=True)
