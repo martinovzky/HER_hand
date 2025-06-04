@@ -1,7 +1,17 @@
 #!/usr/bin/env python3
 
+
+import os,sys
+
+#ensure HER_hand folder is on the pythonpath, to be able to import local modules
+
+_script_dir = os.path.dirbane(os.path.abspath(__file__))
+_project_root = os.path.dirname(_script_dir)
+sys.path.insert(0,_project_root)
+
+
+
 import argparse
-import os
 import yaml
 from pathlib import Path
 from gymnasium.wrappers.record_video import RecordVideo
