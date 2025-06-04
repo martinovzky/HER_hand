@@ -173,6 +173,19 @@ class GraspAndFlipEnv(DirectRLEnv):
         )
         return torch.tensor([r], device=self.device)
 
+
+    # Stable-Baselines3 HER requires `compute_reward` to be implemented
+    def compute_reward(self, achieved_goal, desired_goal, info):
+        """Compute the sparse grasp-and-flip reward for HER."""
+        return float(
+            sparse_grasp_flip_reward(
+                achieved_goal,
+                desired_goal,
+                self.task_cfg.pos_tol,
+                self.task_cfg.ori_tol,
+            )
+        )
+    
     def _reset_idx(self, env_ids):
         """
         Called when specific environments need resetting (new episode).
