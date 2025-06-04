@@ -19,15 +19,17 @@ def launch(headless: bool, record_video: bool, return_env: bool = False):
     # ------------------------------------------------------------------------------
     # 2) Now that App is running, import the rest of the IsaacLab modules
     # ------------------------------------------------------------------------------
-    from isaaclab.sim import SimulationContext, SimulationCfg
+    from isaaclab.sim import SimulationCfg
     from isaaclab.envs import DirectRLEnv, DirectRLEnvCfg, ViewerCfg
+    from isaaclab.scene import InteractiveSceneCfg
+    from gymnasium import spaces
+    import numpy as np
     from source.envs.grasp_and_flip import GraspAndFlipEnv, GraspAndFlipEnvCfg
 
     # ------------------------------------------------------------------------------
-    # 3) Create a SimulationContext (physics + renderer). DirectRLEnv will pick it up.
+    # # 3) Specify simulation settings. DirectRLEnv will create the context.
     # ------------------------------------------------------------------------------
     sim_cfg = SimulationCfg(dt=1/60.0, render_interval=2)
-    sim = SimulationContext(sim_cfg)
 
     # ------------------------------------------------------------------------------
     # 4) Load your YAML configuration (source/config.yaml)
@@ -42,10 +44,32 @@ def launch(headless: bool, record_video: bool, return_env: bool = False):
     # 5) Build DirectRLEnvCfg with a ViewerCfg (never None)
     # ------------------------------------------------------------------------------
     viewer_cfg = ViewerCfg()  # Always supply a ViewerCfg instance
+
+    obs_dim = 31   # 24 hand joints + cube pos (3) + cube rot (4)
+    action_dim = 24
+
+    observation_space = spaces.Dict({
+        "obs": spaces.Box(-np.inf, np.inf, shape=(obs_dim,), dtype=np.float32),
+        "achieved_goal": spaces.Dict({
+            "position": spaces.Box(-np.inf, np.inf, shape=(3,), dtype=np.float32),
+            "orientation": spaces.Box(-np.inf, np.inf, shape=(4,), dtype=np.float32),
+        }),
+        "desired_goal": spaces.Dict({
+            "position": spaces.Box(-np.inf, np.inf, shape=(3,), dtype=np.float32),
+            "orientation": spaces.Box(-np.inf, np.inf, shape=(4,), dtype=np.float32),
+        }),
+    })
+
+    action_space = spaces.Box(-1.0, 1.0, shape=(action_dim,), dtype=np.float32)
+    
     env_cfg    = DirectRLEnvCfg(
         viewer=viewer_cfg,
+        sim=sim_cfg,
+        scene=InteractiveSceneCfg(),
         episode_length_s=10.0,
-        decimation=2
+        decimation=2,
+        observation_space=observation_space,
+        action_space=action_space,
     )
 
     # ------------------------------------------------------------------------------
