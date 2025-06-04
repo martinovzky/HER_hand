@@ -100,6 +100,16 @@ python scripts/train.py
 python scripts/train.py --record
 ```
 
+### Headless recording with `isaac.bat`
+Use the Isaac Sim batch launcher to run headless with video:
+
+```cmd
+isaac-sim.bat --no-window --/app/renderer/enable_recording=true -- \ 
+  python scripts/train.py --headless --video
+
+
+```
+
 ### Evaluation
 ```bash
 python scripts/evaluate.py
@@ -108,10 +118,15 @@ python scripts/evaluate.py
 ## Dependencies Required
 
 ```bash
-pip install stable-baselines3 sb3-contrib pyyaml numpy
-```
+pip install stable-baselines3 sb3-contrib pyyaml numpy tensorboard```
 
-Plus Isaac Sim 4.5 and Isaac Lab 2.0 installation.
+Plus Isaac Sim 4.5 and Isaac Lab 2.0 installation
+
+TensorBoard logs are saved to the `logs/` directory. Launch with:
+
+```bash
+tensorboard --logdir logs
+```
 
 ## Expected Learning Behavior
 
