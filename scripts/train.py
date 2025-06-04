@@ -129,6 +129,10 @@ def main():
     print(f"DEBUG: Final train_cfg: {train_cfg}")
     print(f"DEBUG: Final her_cfg: {her_cfg}")
 
+    # Ensure tensorboard log directory exists
+    os.makedirs("logs", exist_ok=True)
+    print("DEBUG: TensorBoard log directory created at 'logs/'")
+
     
     # Create agent with progress callback
     model, callback = make_ddpg_her_agent(env, train_cfg, her_cfg)
