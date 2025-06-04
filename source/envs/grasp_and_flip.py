@@ -20,7 +20,7 @@ from source.utils.reward import sparse_grasp_flip_reward
 @dataclass
 class GraspAndFlipEnvCfg:
     table_height: float       = 0.295            # Top of table in meters
-    flip_axis:    list[float] = [0.0, 0.0, 1.0]  # Flip around Z‐axis
+    flip_axis:    list[float] = field(default_factory=lambda: [0.0, 0.0, 1.0]) # Flip around Z‐axis
     flip_angle:   float       = float(np.pi)    # 180° flip
     pos_tol:      float       = 0.02             # 2 cm tolerance
     ori_tol:      float       = 0.1              # ~6° tolerance
