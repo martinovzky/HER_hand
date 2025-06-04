@@ -211,11 +211,12 @@ class GraspAndFlipEnv(DirectRLEnv):
         cube_pos = self.cube_frame.data.target_pos_w[env_ids, 0]   # shape = (num_envs, 3)
         cube_rot = self.cube_frame.data.target_quat_w[env_ids, 0]  # shape = (num_envs, 4)
 
-        axis  = torch.tensor(self.task_cfg.flip_axis, device=self.device)  # shape = (3,)
+        # Convert flip_axis to float tensor with correct device
+        axis = torch.tensor(self.task_cfg.flip_axis, dtype=torch.float32, device=self.device)  # shape = (3,)
         angle = self.task_cfg.flip_angle
-        qw    = float(np.cos(angle / 2.0))
-        qxyz  = (axis / torch.norm(axis)) * float(np.sin(angle / 2.0))
-        flip_quat_base = torch.cat([qxyz, torch.tensor([qw], device=self.device)])  # shape = (4,)
+        qw = float(np.cos(angle / 2.0))
+        qxyz = (axis / torch.norm(axis)) * float(np.sin(angle / 2.0))
+        flip_quat_base = torch.cat([qxyz, torch.tensor([qw], dtype=torch.float32, device=self.device)])  # shape = (4,)
 
         flip_quat = flip_quat_base.unsqueeze(0).repeat(len(env_ids), 1)  # shape = (num_envs, 4)
         desired_ori = quat_mul(flip_quat, cube_rot)                     # shape = (num_envs, 4)
@@ -229,3 +230,4 @@ class GraspAndFlipEnv(DirectRLEnv):
     def num_hand_joints(self) -> int:
         """Return the total number of joints in the Shadow Hand articulation."""
         return self.hand.num_joints
+
