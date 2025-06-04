@@ -61,11 +61,13 @@ def launch(headless: bool, record_video: bool, return_env: bool = False):
     })
 
     action_space = spaces.Box(-1.0, 1.0, shape=(action_dim,), dtype=np.float32)
+
+    scene_cfg = InteractiveSceneCfg(num_envs=1, env_spacing=2.0)
     
     env_cfg    = DirectRLEnvCfg(
         viewer=viewer_cfg,
         sim=sim_cfg,
-        scene=InteractiveSceneCfg(),
+        scene=scene_cfg,
         episode_length_s=10.0,
         decimation=2,
         observation_space=observation_space,
