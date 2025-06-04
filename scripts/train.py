@@ -128,6 +128,7 @@ def main():
     
     print(f"DEBUG: Final train_cfg: {train_cfg}")
     print(f"DEBUG: Final her_cfg: {her_cfg}")
+
     
     # Create agent with progress callback
     model, callback = make_ddpg_her_agent(env, train_cfg, her_cfg)

@@ -165,3 +165,4 @@ def make_ddpg_her_agent(env, train_cfg: dict, her_cfg: dict):
 
     # Return both model and your ProgressCallback
     return model, ProgressCallback()
+
