@@ -9,8 +9,6 @@ _script_dir = os.path.dirbane(os.path.abspath(__file__))
 _project_root = os.path.dirname(_script_dir)
 sys.path.insert(0,_project_root)
 
-
-
 import argparse
 import yaml
 from pathlib import Path
