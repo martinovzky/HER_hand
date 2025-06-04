@@ -117,7 +117,14 @@ def main():
         "batch_size":    cfg.get("train", {}).get("batch_size", 256),
         "learning_rate": cfg.get("train", {}).get("learning_rate", 1e-3),
     }
-    her_cfg = {"k": cfg.get("her", {}).get("k", 4)}
+    her_section = cfg.get("her", {}) if isinstance(cfg.get("her", {}), dict) else {}
+    her_cfg = {
+        "n_sampled_goal": her_section.get("n_sampled_goal", 4),
+        "goal_selection_strategy": her_section.get("goal_selection_strategy", "future"),
+        "online_sampling": her_section.get("online_sampling", True),
+    }
+    if "max_episode_length" in her_section:
+        her_cfg["max_episode_length"] = her_section["max_episode_length"]
     
     print(f"DEBUG: Final train_cfg: {train_cfg}")
     print(f"DEBUG: Final her_cfg: {her_cfg}")
