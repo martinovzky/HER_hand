@@ -146,17 +146,25 @@ class GraspAndFlipEnv(DirectRLEnv):
         cube_pos = self.cube_frame.data.target_pos_w[0, 0]    # shape = (3,)
         cube_rot = self.cube_frame.data.target_quat_w[0, 0]   # shape = (4,)
 
+        # Flatten achieved_goal and desired_goal
+        achieved_goal = np.concatenate([
+            cube_pos.cpu().numpy(),
+            cube_rot.cpu().numpy()
+        ])  # shape = (7,)
+        
+        desired_goal = np.concatenate([
+            self.current_goal["position"],
+            self.current_goal["orientation"]
+        ])  # shape = (7,)
+
         return {
-            "obs": np.concatenate([
+            "observation": np.concatenate([
                 joint_pos.cpu().numpy(),
                 cube_pos.cpu().numpy(),
                 cube_rot.cpu().numpy()
             ]),
-            "achieved_goal": {
-                "position": cube_pos.cpu().numpy(),
-                "orientation": cube_rot.cpu().numpy()
-            },
-            "desired_goal": self.current_goal
+            "achieved_goal": achieved_goal,
+            "desired_goal": desired_goal
         }
 
     def _get_rewards(self) -> torch.Tensor:
