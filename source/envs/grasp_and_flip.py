@@ -173,9 +173,20 @@ class GraspAndFlipEnv(DirectRLEnv):
         Uses sparse binary reward: 1.0 if within both position and orientation tolerances.
         """
         od = self._get_observations()
-        r  = sparse_grasp_flip_reward(
-            od["achieved_goal"],
-            od["desired_goal"],
+        
+        # Convert flattened goals back to dict format for reward function
+        achieved = {
+            "position": od["achieved_goal"][:3],
+            "orientation": od["achieved_goal"][3:7]
+        }
+        desired = {
+            "position": od["desired_goal"][:3], 
+            "orientation": od["desired_goal"][3:7]
+        }
+        
+        r = sparse_grasp_flip_reward(
+            achieved,
+            desired,
             self.task_cfg.pos_tol,
             self.task_cfg.ori_tol
         )
