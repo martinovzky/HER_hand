@@ -185,10 +185,20 @@ class GraspAndFlipEnv(DirectRLEnv):
     # Stable-Baselines3 HER requires `compute_reward` to be implemented
     def compute_reward(self, achieved_goal, desired_goal, info):
         """Compute the sparse grasp-and-flip reward for HER."""
+        # Convert flattened goals back to dict format
+        achieved = {
+            "position": achieved_goal[:3],
+            "orientation": achieved_goal[3:7]
+        }
+        desired = {
+            "position": desired_goal[:3], 
+            "orientation": desired_goal[3:7]
+        }
+        
         return float(
             sparse_grasp_flip_reward(
-                achieved_goal,
-                desired_goal,
+                achieved,
+                desired,
                 self.task_cfg.pos_tol,
                 self.task_cfg.ori_tol,
             )
