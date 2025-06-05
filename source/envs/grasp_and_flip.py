@@ -196,24 +196,56 @@ class GraspAndFlipEnv(DirectRLEnv):
     # Stable-Baselines3 HER requires `compute_reward` to be implemented
     def compute_reward(self, achieved_goal, desired_goal, info):
         """Compute the sparse grasp-and-flip reward for HER."""
-        # Convert flattened goals back to dict format
-        achieved = {
-            "position": achieved_goal[:3],
-            "orientation": achieved_goal[3:7]
-        }
-        desired = {
-            "position": desired_goal[:3], 
-            "orientation": desired_goal[3:7]
-        }
+        # Handle batched inputs from HER - squeeze out the middle dimension if present
+        if isinstance(achieved_goal, np.ndarray) and achieved_goal.ndim == 3:
+            achieved_goal = achieved_goal.squeeze(1)  # (batch_size, 1, goal_dim) -> (batch_size, goal_dim)
+        if isinstance(desired_goal, np.ndarray) and desired_goal.ndim == 3:
+            desired_goal = desired_goal.squeeze(1)    # (batch_size, 1, goal_dim) -> (batch_size, goal_dim)
         
-        return float(
-            sparse_grasp_flip_reward(
-                achieved,
-                desired,
-                self.task_cfg.pos_tol,
-                self.task_cfg.ori_tol,
+        # Handle single vs batch input
+        if achieved_goal.ndim == 1:
+            # Single goal case
+            achieved = {
+                "position": achieved_goal[:3],
+                "orientation": achieved_goal[3:7]
+            }
+            desired = {
+                "position": desired_goal[:3], 
+                "orientation": desired_goal[3:7]
+            }
+            
+            return float(
+                sparse_grasp_flip_reward(
+                    achieved,
+                    desired,
+                    self.task_cfg.pos_tol,
+                    self.task_cfg.ori_tol,
+                )
             )
-        )
+        else:
+            # Batch case - compute reward for each sample in the batch
+            batch_size = achieved_goal.shape[0]
+            rewards = []
+            
+            for i in range(batch_size):
+                achieved = {
+                    "position": achieved_goal[i, :3],
+                    "orientation": achieved_goal[i, 3:7]
+                }
+                desired = {
+                    "position": desired_goal[i, :3], 
+                    "orientation": desired_goal[i, 3:7]
+                }
+                
+                reward = sparse_grasp_flip_reward(
+                    achieved,
+                    desired,
+                    self.task_cfg.pos_tol,
+                    self.task_cfg.ori_tol,
+                )
+                rewards.append(reward)
+            
+            return np.array(rewards, dtype=np.float32)
     
     def _reset_idx(self, env_ids):
         """
@@ -273,14 +305,26 @@ class GraspAndFlipEnv(DirectRLEnv):
 
     def _get_dones(self) -> tuple[torch.Tensor, torch.Tensor]:
         """
-        Called each step to determine if episodes are done.
+        Determine when episodes should terminate or be truncated.
+        
         Returns:
-            terminated: Episodes that reached terminal condition
-            truncated: Episodes that reached time limit
+            terminated: Task-specific termination (e.g., success/failure conditions)
+            truncated: Time-based truncation (episode length limit)
         """
-        # For now, never terminate episodes early (let time limit handle it)
+        # Task-specific termination conditions (customize as needed)
+        # For now, we don't terminate early - let episodes run full length
         terminated = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
-        truncated = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
+        
+        # Time-based truncation: truncate when episode length exceeds max_episode_length
+        # episode_length_buf tracks steps in current episode for each environment
+        truncated = self.episode_length_buf >= self.max_episode_length
+        
+        # Debug print (remove after debugging)
+        #if self.num_envs == 1:  # Only print for single env to avoid spam
+         #   current_step = self.episode_length_buf[0].item()
+        #    max_steps = self.max_episode_length
+        #    print(f"DEBUG _get_dones: step={current_step}/{max_steps}, terminated={terminated[0].item()}, truncated={truncated[0].item()}")
+        
         return terminated, truncated
 
     @property  
@@ -290,7 +334,6 @@ class GraspAndFlipEnv(DirectRLEnv):
 
     def step(self, action):
         """Preprocess action and postprocess return values for SB3 compatibility."""
-        # Convert numpy array to tensor if needed
         if isinstance(action, np.ndarray):
             action = torch.from_numpy(action).float().to(self.device)
         elif not isinstance(action, torch.Tensor):
@@ -300,6 +343,10 @@ class GraspAndFlipEnv(DirectRLEnv):
         
         # Call the parent step method
         obs, reward, terminated, truncated, info = super().step(action)
+        
+        # DEBUG: Print when episodes end
+        #if truncated[0].item() or terminated[0].item():
+        #   print(f"DEBUG step: Episode ended! terminated={terminated[0].item()}, truncated={truncated[0].item()}")
         
         # Convert CUDA tensors to CPU/NumPy for SB3 compatibility
         if isinstance(reward, torch.Tensor):
@@ -316,5 +363,6 @@ class GraspAndFlipEnv(DirectRLEnv):
                     info[key] = value.cpu().numpy()
         
         return obs, reward, terminated, truncated, info
+
         
 
