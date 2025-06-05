@@ -15,26 +15,9 @@ class ProgressCallback(BaseCallback):
         self.recent_lengths = []  # Last 100 episodes
 
     def _on_step(self) -> bool:
-        # Log every 1000 steps with comprehensive metrics
-        if self.num_timesteps % 1000 == 0:
-            print(f"\n{'='*60}")
-            print(f"Training Step: {self.num_timesteps:,} / 1,000,000 ({self.num_timesteps/10000:.1f}%)")
-
-            # Show learning rate if available
-            if hasattr(self.model, 'learning_rate'):
-                lr = self.model.learning_rate
-                if callable(lr):
-                    lr = lr(1.0)  # Get current learning rate
-                print(f"Learning Rate: {lr:.6f}")
-
-            # Show DDPG losses if available
-            if hasattr(self.model, 'logger') and hasattr(self.model.logger, 'name_to_value'):
-                logger_data = self.model.logger.name_to_value
-                if 'train/actor_loss' in logger_data:
-                    print(f"Actor Loss:    {logger_data['train/actor_loss']:.6f}")
-                if 'train/critic_loss' in logger_data:
-                    print(f"Critic Loss:   {logger_data['train/critic_loss']:.6f}")
-
+        # The default SB3 logging (every 1000 steps) will continue as normal
+        # We don't need to add any custom step-based logging here
+        
         # Track episodes and comprehensive metrics
         infos = self.locals.get('infos', [{}])
         if len(infos) > 0 and 'episode' in infos[0]:
@@ -58,8 +41,8 @@ class ProgressCallback(BaseCallback):
             if reward > 0.5:
                 self.success_count += 1
 
-            # Log detailed metrics every 100 episodes
-            if self.episode_count % 100 == 0:
+            # Log detailed metrics every 2500 episodes 
+            if self.episode_count % 2500 == 0:
                 success_rate = self.success_count / self.episode_count
 
                 # Recent performance (last 100 episodes)
@@ -91,19 +74,18 @@ class ProgressCallback(BaseCallback):
                 print(f"  Training Steps:         {self.num_timesteps:,}")
 
                 # Performance trend (compare last 100 vs. previous 100 episodes)
-                if self.episode_count >= 200:
-                    prev_100_success = sum(
-                        1 for r in self.episode_rewards[-200:-100] if r > 0.5
-                    ) / 100
-                    current_100_success = recent_success_rate
-                    if current_100_success > prev_100_success:
-                        trend = "↗️ IMPROVING"
-                    elif current_100_success < prev_100_success:
-                        trend = "↘️ DECLINING"
+                if len(self.episode_rewards) >= 200:
+                    last_100_avg = np.mean(self.episode_rewards[-100:])
+                    prev_100_avg = np.mean(self.episode_rewards[-200:-100])
+                    if last_100_avg > prev_100_avg + 0.01:
+                        trend = "↗ IMPROVING"
+                    elif last_100_avg < prev_100_avg - 0.01:
+                        trend = "↘ DECLINING"
                     else:
                         trend = "→ STABLE"
                     print(f"  Performance Trend:      {trend}")
-
+                else:
+                    print(f"  Performance Trend:      → STABLE")
                 print(f"{'='*60}")
 
         return True
@@ -148,7 +130,7 @@ def make_ddpg_her_agent(env, train_cfg: dict, her_cfg: dict):
         replay_buffer_kwargs=replay_buffer_kwargs,
         batch_size=train_cfg.get("batch_size", 256),
         learning_rate=train_cfg.get("learning_rate", 1e-3),
-        learning_starts=8000,                  # Wait for 8000 steps before starting training
+        learning_starts=1000,                  # Wait for 1000 steps before starting training
         train_freq=1,                          # Train every step after learning_starts
         gradient_steps=1,                      # Number of gradient steps per training
         tensorboard_log="./logs/",
@@ -157,4 +139,3 @@ def make_ddpg_her_agent(env, train_cfg: dict, her_cfg: dict):
 
     # Return both model and your ProgressCallback
     return model, ProgressCallback()
-
