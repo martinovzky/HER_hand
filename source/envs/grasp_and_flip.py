@@ -288,3 +288,16 @@ class GraspAndFlipEnv(DirectRLEnv):
         """Return the total number of joints in the Shadow Hand articulation."""
         return self.hand.num_joints
 
+    def step(self, action):
+        """wrap parent step method with this step method to handle numpy to tensor conversion."""
+        # Convert numpy array to tensor if needed
+        if isinstance(action, np.ndarray):
+            action = torch.from_numpy(action).float().to(self.device)
+        elif not isinstance(action, torch.Tensor):
+            action = torch.tensor(action, dtype=torch.float32, device=self.device)
+        else:
+            action = action.to(self.device)
+        
+        # Call the parent step method
+        return super().step(action)
+
