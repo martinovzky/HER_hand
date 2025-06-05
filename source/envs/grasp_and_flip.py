@@ -289,7 +289,7 @@ class GraspAndFlipEnv(DirectRLEnv):
         return self.hand.num_joints
 
     def step(self, action):
-        """wrap parent step method with this step method to handle numpy to tensor conversion."""
+        """Preprocess action and postprocess return values for SB3 compatibility."""
         # Convert numpy array to tensor if needed
         if isinstance(action, np.ndarray):
             action = torch.from_numpy(action).float().to(self.device)
@@ -299,5 +299,22 @@ class GraspAndFlipEnv(DirectRLEnv):
             action = action.to(self.device)
         
         # Call the parent step method
-        return super().step(action)
+        obs, reward, terminated, truncated, info = super().step(action)
+        
+        # Convert CUDA tensors to CPU/NumPy for SB3 compatibility
+        if isinstance(reward, torch.Tensor):
+            reward = reward.cpu().numpy()
+        if isinstance(terminated, torch.Tensor):
+            terminated = terminated.cpu().numpy()
+        if isinstance(truncated, torch.Tensor):
+            truncated = truncated.cpu().numpy()
+        
+        # Convert any tensors in info dict to numpy
+        if isinstance(info, dict):
+            for key, value in info.items():
+                if isinstance(value, torch.Tensor):
+                    info[key] = value.cpu().numpy()
+        
+        return obs, reward, terminated, truncated, info
+        
 
