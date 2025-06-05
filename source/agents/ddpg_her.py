@@ -148,6 +148,9 @@ def make_ddpg_her_agent(env, train_cfg: dict, her_cfg: dict):
         replay_buffer_kwargs=replay_buffer_kwargs,
         batch_size=train_cfg.get("batch_size", 256),
         learning_rate=train_cfg.get("learning_rate", 1e-3),
+        learning_starts=2000,                  # Wait for 2000 steps before starting training
+        train_freq=1,                          # Train every step after learning_starts
+        gradient_steps=1,                      # Number of gradient steps per training
         tensorboard_log="./logs/",
         verbose=1,
     )
