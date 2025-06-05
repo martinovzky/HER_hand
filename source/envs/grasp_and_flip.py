@@ -226,7 +226,35 @@ class GraspAndFlipEnv(DirectRLEnv):
             "orientation": desired_ori.cpu().numpy()   # shape = (num_envs, 4)
         }
 
-    @property
+    def _pre_physics_step(self, actions: torch.Tensor) -> None:
+        """
+        Called before each physics step to process actions.
+        Convert actions to joint position targets for the Shadow Hand.
+        """
+        # Apply actions as joint position targets to the hand
+        # actions should have shape (num_envs, num_joints)
+        self.hand.set_joint_position_target(actions)
+
+    def _apply_action(self) -> None:
+        """
+        Called after _pre_physics_step to write data to simulation.
+        The joint targets are already set in _pre_physics_step, so nothing to do here.
+        """
+        pass
+
+    def _get_dones(self) -> tuple[torch.Tensor, torch.Tensor]:
+        """
+        Called each step to determine if episodes are done.
+        Returns:
+            terminated: Episodes that reached terminal condition
+            truncated: Episodes that reached time limit
+        """
+        # For now, never terminate episodes early (let time limit handle it)
+        terminated = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
+        truncated = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
+        return terminated, truncated
+
+    @property  
     def num_hand_joints(self) -> int:
         """Return the total number of joints in the Shadow Hand articulation."""
         return self.hand.num_joints
