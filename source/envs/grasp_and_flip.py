@@ -222,8 +222,8 @@ class GraspAndFlipEnv(DirectRLEnv):
         desired_ori = quat_mul(flip_quat, cube_rot)                     # shape = (num_envs, 4)
 
         self.current_goal = {
-            "position": cube_pos.cpu().numpy(),       # shape = (num_envs, 3)
-            "orientation": desired_ori.cpu().numpy()   # shape = (num_envs, 4)
+            "position": cube_pos[0].cpu().numpy(),       # shape = (3,) - remove batch dimension
+            "orientation": desired_ori[0].cpu().numpy()  # shape = (4,) - remove batch dimension
         }
 
     def _pre_physics_step(self, actions: torch.Tensor) -> None:
