@@ -50,16 +50,11 @@ def launch(headless: bool, record_video: bool, return_env: bool = False):
     action_dim = 24
 
     observation_space = spaces.Dict({
-        "obs": spaces.Box(-np.inf, np.inf, shape=(obs_dim,), dtype=np.float32),
-        "achieved_goal": spaces.Dict({
-            "position": spaces.Box(-np.inf, np.inf, shape=(3,), dtype=np.float32),
-            "orientation": spaces.Box(-np.inf, np.inf, shape=(4,), dtype=np.float32),
-        }),
-        "desired_goal": spaces.Dict({
-            "position": spaces.Box(-np.inf, np.inf, shape=(3,), dtype=np.float32),
-            "orientation": spaces.Box(-np.inf, np.inf, shape=(4,), dtype=np.float32),
-        }),
+        "observation": spaces.Box(-np.inf, np.inf, shape=(obs_dim,), dtype=np.float32),
+        "achieved_goal": spaces.Box(-np.inf, np.inf, shape=(7,), dtype=np.float32),  # pos(3) + ori(4)
+        "desired_goal": spaces.Box(-np.inf, np.inf, shape=(7,), dtype=np.float32),   # pos(3) + ori(4)
     })
+
 
     action_space = spaces.Box(-1.0, 1.0, shape=(action_dim,), dtype=np.float32)
 
