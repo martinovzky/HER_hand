@@ -55,7 +55,6 @@ def launch(headless: bool, record_video: bool, return_env: bool = False):
         "desired_goal": spaces.Box(-np.inf, np.inf, shape=(7,), dtype=np.float32),   # pos(3) + ori(4)
     })
 
-
     action_space = spaces.Box(-1.0, 1.0, shape=(action_dim,), dtype=np.float32)
 
     scene_cfg = InteractiveSceneCfg(num_envs=1, env_spacing=2.0)
@@ -84,8 +83,10 @@ def launch(headless: bool, record_video: bool, return_env: bool = False):
     # ------------------------------------------------------------------------------
     # 7) Reset to build the scene and get the first observation
     # ------------------------------------------------------------------------------
+    print("DEBUG: About to call env.reset()")
     obs, _ = env.reset()
-
+    print("DEBUG: env.reset() completed successfully")
+    print(f"DEBUG: obs keys: {obs.keys() if isinstance(obs, dict) else 'Not a dict'}")
 
     # ------------------------------------------------------------------------------
     # 8) Simple rollout/training loop
@@ -93,16 +94,28 @@ def launch(headless: bool, record_video: bool, return_env: bool = False):
     # ------------------------------------------------------------------------------
     train_section = cfg_data.get("train", {})
     total_steps   = int(train_section.get("total_steps", 0)) if isinstance(train_section, dict) else 0
+    print(f"DEBUG: Starting training loop for {total_steps} steps")
 
-    for _ in range(total_steps):
+    for step in range(total_steps):
+        print(f"DEBUG: Step {step}")
         # DirectRLEnv.step expects a torch.Tensor on the correct device
         action_np = env.action_space.sample()
         action = torch.tensor(action_np, dtype=torch.float32, device=env.device)
+        print(f"DEBUG: About to call env.step() with action shape: {action.shape}")
         obs, reward, terminated, truncated, info = env.step(action)
+        print(f"DEBUG: env.step() completed, reward: {reward}")
+        
         # If any environment is done or truncated, reset
         if terminated.any() or truncated.any():
+            print("DEBUG: Episode done, resetting...")
             obs, _ = env.reset()
+        
+        # Add a break for testing
+        if step >= 5:  # Only run 5 steps for debugging
+            print("DEBUG: Breaking after 5 steps for debugging")
+            break
 
+    print("DEBUG: Training loop completed")
 
     # ------------------------------------------------------------------------------
     # 9) Return or close
@@ -113,6 +126,14 @@ def launch(headless: bool, record_video: bool, return_env: bool = False):
         env.close()
         app.close()
         return None
+
+
+
+
+
+
+
+
 
 
 
