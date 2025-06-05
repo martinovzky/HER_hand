@@ -114,8 +114,8 @@ def make_ddpg_her_agent(env, train_cfg: dict, her_cfg: dict):
     Create a DDPG model with HER using SB3's HerReplayBuffer.
 
     Args:
-        env:  env: a goal-conditioned environment. 
-          It should return dict observations with keys ``'obs'``, ``'achieved_goal'`` and
+        env: a goal-conditioned environment. 
+          It should return dict observations with keys ``'observation'``, ``'achieved_goal'`` and
              ``'desired_goal'`` and expose ``compute_reward()`` for HER.
         train_cfg: dict with keys:
             - batch_size: int
@@ -124,10 +124,7 @@ def make_ddpg_her_agent(env, train_cfg: dict, her_cfg: dict):
             - n_sampled_goal: int  (number of future goals to sample per step)
             - goal_selection_strategy: str or GoalSelectionStrategy enum 
                                        (e.g., "future" or GoalSelectionStrategy.FUTURE)
-            - online_sampling: bool
-            - (optional) max_episode_length: int
-                If your env does not automatically expose `max_episode_steps` via TimeLimit,
-                you can specify this explicitly here.
+            - copy_info_dict: bool (optional)
 
     Returns:
         model: a Stable-Baselines3 DDPG model configured with HerReplayBuffer
@@ -140,21 +137,14 @@ def make_ddpg_her_agent(env, train_cfg: dict, her_cfg: dict):
         "goal_selection_strategy": her_cfg.get(
             "goal_selection_strategy", GoalSelectionStrategy.FUTURE
         ),
-        "online_sampling": her_cfg.get("online_sampling", True),
+        "copy_info_dict": her_cfg.get("copy_info_dict", False),
     }
-
-    # If your environment does NOT have env.spec.max_episode_steps set by a TimeLimit wrapper,
-    # you must supply max_episode_length manually (otherwise it is inferred). For example:
-    if "max_episode_length" in her_cfg:
-        replay_buffer_kwargs["max_episode_length"] = her_cfg["max_episode_length"]
-    # Otherwise, if your env was registered with a gym.wrappers.TimeLimit and env.spec is not None,
-    # SB3 will automatically pick up env.spec.max_episode_steps.
 
     # Create the DDPG model, passing in the HER replay buffer
     model = DDPG(
-        policy="MultiInputPolicy",            # Required for Dict obs: {obs, achieved_goal, desired_goal}
+        policy="MultiInputPolicy",            # Required for Dict obs: {observation, achieved_goal, desired_goal}
         env=env,                               # Pass the GoalEnv directly
-        replay_buffer_class=HerReplayBuffer,   # Hook in HER’s replay buffer
+        replay_buffer_class=HerReplayBuffer,   # Hook in HER's replay buffer
         replay_buffer_kwargs=replay_buffer_kwargs,
         batch_size=train_cfg.get("batch_size", 256),
         learning_rate=train_cfg.get("learning_rate", 1e-3),
