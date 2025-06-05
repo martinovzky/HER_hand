@@ -25,6 +25,7 @@ def launch(headless: bool, record_video: bool, return_env: bool = False):
     from gymnasium import spaces
     import numpy as np
     from source.envs.grasp_and_flip import GraspAndFlipEnv, GraspAndFlipEnvCfg
+    import torch
 
     # ------------------------------------------------------------------------------
     # # 3) Specify simulation settings. DirectRLEnv will create the context.
@@ -99,7 +100,9 @@ def launch(headless: bool, record_video: bool, return_env: bool = False):
     total_steps   = int(train_section.get("total_steps", 0)) if isinstance(train_section, dict) else 0
 
     for _ in range(total_steps):
-        action = env.action_space.sample()
+        # DirectRLEnv.step expects a torch.Tensor on the correct device
+        action_np = env.action_space.sample()
+        action = torch.tensor(action_np, dtype=torch.float32, device=env.device)
         obs, reward, terminated, truncated, info = env.step(action)
         # If any environment is done or truncated, reset
         if terminated.any() or truncated.any():
