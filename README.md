@@ -27,29 +27,15 @@
 - Uses "future" goal selection strategy with k=4 relabels per transition
 - Creates DDPG model with specified hyperparameters
 
-### 5. Launcher (`source/extension.py`)
-- **launch()**: Starts Isaac Lab via AppLauncher
-- Creates SimulationContext with proper physics/rendering timesteps
-- Instantiates environment with DirectRLEnvCfg
-- Supports headless mode and video recording
-
-### 6. Training Scripts
-- **scripts/train.py**: Complete training pipeline with CLI arguments
-- **scripts/evaluate.py**: Evaluation script for trained models
-
-
-## Configuration (`source/config.yaml`)
-
 
 ## Notes 
 
 All code follows the new Isaac Sim 4.5 API structure:
 - **No deprecated `omni.isaac.*` imports**
 - **Uses Isaac Lab 2.0 APIs**: `isaaclab.envs`, `isaaclab.sim.spawners`
-- **Modern spawning**: `spawn_usd` with `UsdFileCfg`
 - **DirectRLEnv**: Latest RL environment base class
 
-## Usage
+## Usage 
 
 ### Training
 ```bash
